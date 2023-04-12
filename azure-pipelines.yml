@@ -10,11 +10,15 @@ trigger:
 
 pool: Default
 
-variables:
-  AccessBearerToken:
 
 
 
+
+parameters:
+
+
+- name: AccessBearerToken
+  type: string
 
 
 
@@ -50,8 +54,8 @@ stages:
 
               }
               $Result = Invoke-RestMethod -Uri $Url -Method Post -Body $Abody
-              ${env:AccessBearerToken}=$Result.access_token
-              Write-Host "Access token:" "Bearer" ${env:AccessBearerToken}
+              ${{ parameters.AccessBearerToken }}=$Result.access_token
+              Write-Host "Access token:" "Bearer" ${{ parameters.AccessBearerToken }}
 
 
   - stage: CreateQueue 
@@ -76,10 +80,10 @@ stages:
 
                $qBody=($qBody | ConvertTo-Json)  
                $Qheaders = @{
-               Authorization = "Bearer ${env:AccessBearerToken}" 
+               Authorization = "Bearer ${{ parameters.AccessBearerToken }}" 
                "X-UIPATH-TenantName" = 'ITG_Finance' 
                "X-UIPATH-OrganizationUnitId"='1271824'
                            }
 
-               Write-Host "Access token" 'bearer' ${env:AccessBearerToken}
+               Write-Host "Access token" 'bearer' ${{ parameters.AccessBearerToken }}
                $response = Invoke-RestMethod -Uri $QUrl -Method Post -ContentType "application/json" -Headers $Qheaders -Body $qBody
