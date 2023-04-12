@@ -4,16 +4,88 @@
 # https://aka.ms/yaml
 
 trigger:
-- main
+- master
 
-pool:
-  vmImage: ubuntu-latest
 
-steps:
-- script: echo Hello, world!
-  displayName: 'Run a one-line script'
 
-- script: |
-    echo Add other tasks to build, test, and deploy your project.
-    echo See https://aka.ms/yaml
-  displayName: 'Run a multi-line script'
+pool: Default
+
+variables:
+  AccessBearerToken:
+
+parameters:
+
+
+- name: machinename
+  type: string
+  default: 'rpadev100'
+  displayName: Name of the process from Project json file
+
+
+
+
+
+stages:
+
+  - stage: getcredential
+    displayName: getcredential
+
+    jobs:
+      - job: getcredential
+ 
+        steps:
+        - task: PowerShell@2
+          inputs:
+            targetType: 'inline'
+            script: |
+
+              $Url = "https://cloud.uipath.com/identity_/connect/token"
+
+              $headers = @{
+               "Content-Type" = 'application/json'
+
+                         }
+
+
+              
+              $ABody = @{
+               "client_id"= "83e73e47-a52e-4fe8-974e-caf45c99cfcd"
+              "grant_type"='client_credentials'
+              "scope"='OR.Queues OR.Machines'
+              "client_secret"='$(Client_Secret)'
+
+              }
+              $Result = Invoke-RestMethod -Uri $Url -Method Post -Body $Abody
+              ${env:AccessBearerToken}=$Result.access_token
+              Write-Host "Access token:" "Bearer" ${env:AccessBearerToken}
+
+
+  - stage: CreateQueue 
+    displayName: Create Queue 
+    dependsOn: getcredential
+    condition: succeeded()
+    jobs:
+      - job: CreateQueue
+        steps:
+          - task: PowerShell@2
+            inputs:
+             targetType: 'inline'
+             script: |
+               
+               $QUrl = "https://cloud.uipath.com/HPInc/ITG_Finance/odata/QueueDefinitions"
+              
+                $qBody = @{ 
+                Name= "TestQueue_Azure1"
+                Description= "Demo"
+              
+               }    
+
+               $qBody=($qBody | ConvertTo-Json)  
+               $Qheaders = @{
+               Authorization = "Bearer ${env:AccessBearerToken}" 
+               "X-UIPATH-TenantName" = 'ITG_Finance' 
+               "X-UIPATH-OrganizationUnitId"='1271824'
+                           }
+
+               Write-Host "Access token" 'bearer' ${env:AccessBearerToken}
+               $response = Invoke-RestMethod -Uri $QUrl -Method Post -ContentType "application/json" -Headers $Qheaders -Body $qBody
