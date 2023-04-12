@@ -13,13 +13,7 @@ pool: Default
 variables:
   AccessBearerToken:
 
-parameters:
 
-
-- name: machinename
-  type: string
-  default: 'rpadev100'
-  displayName: Name of the process from Project json file
 
 
 
